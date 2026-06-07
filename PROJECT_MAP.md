@@ -34,14 +34,26 @@ D:\RMSA
 │   ├── app/
 │   │   ├── globals.css       # Global styles + brand design tokens
 │   │   ├── layout.tsx        # Root layout (fonts, metadata, RTL)
-│   │   └── page.tsx          # Homepage
-│   └── components/
-│       └── ui/
-│           ├── badge.tsx
-│           ├── button.tsx
-│           ├── card.tsx
-│           ├── input.tsx
-│           └── page-header.tsx
+│   │   ├── page.tsx          # Homepage
+│   │   └── dashboard/
+│   │       ├── layout.tsx    # Dashboard layout (DashboardShell wrapper)
+│   │       └── page.tsx      # Dashboard home with mock KPIs
+│   ├── components/
+│   │   ├── ui/               # Primitives
+│   │   │   ├── badge.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── input.tsx
+│   │   │   └── page-header.tsx
+│   │   └── dashboard/        # Dashboard layout components
+│   │       ├── dashboard-shell.tsx
+│   │       ├── sidebar.tsx
+│   │       ├── topbar.tsx
+│   │       ├── stat-card.tsx
+│   │       ├── empty-state.tsx
+│   │       └── data-table-shell.tsx
+│   └── data/
+│       └── dashboard.ts      # Mock data for dashboard
 ├── .gitignore
 ├── eslint.config.mjs
 ├── logo.svg                  # Source logo file
@@ -54,7 +66,9 @@ D:\RMSA
 └── ...
 ```
 
-## Completed: Brand Identity & UI Foundation
+## Completed
+
+### Phase 0 — Brand Identity & UI Foundation
 - [x] Design tokens defined in Tailwind v4 `@theme`
 - [x] Inter (Latin) + Noto Sans Arabic fonts via `next/font/google`
 - [x] RTL-first layout (`dir="rtl"`, `lang="ar"`)
@@ -63,6 +77,22 @@ D:\RMSA
 - [x] UI primitives: Button, Input, Card, Badge, PageHeader
 - [x] Brand homepage with Arabic/English copy
 
+### Phase 0.5 — Dashboard Shell & Layout
+- [x] `/dashboard` route with App Router
+- [x] DashboardShell: responsive layout with sidebar + topbar + content
+- [x] Sidebar: 14 navigation items with inline SVG icons, active state, "قريباً" labels
+- [x] Topbar: mobile menu toggle, search, notifications, user avatar
+- [x] StatCard: icon + label + value + optional trend
+- [x] DataTableShell: reusable table wrapper with headers
+- [x] EmptyState: placeholder component for empty views
+- [x] Mock data file (`src/data/dashboard.ts`)
+- [x] Dashboard KPI grid: 6 stat cards
+- [x] Recent shipments table (5 rows)
+- [x] Active trips table (3 rows)
+- [x] License/document alerts widget
+- [x] Responsive: desktop / tablet / mobile
+- [x] RTL-first with future LTR support via `rtl:`/`ltr:` modifiers
+
 ## Platforms (future phases)
 1. **ERP Admin Panel** — Web dashboard
 2. **Client Portal** — Web portal for B2B/B2C clients
@@ -70,9 +100,9 @@ D:\RMSA
 4. **Driver App** — Mobile app for inter-city drivers
 5. **API** — Integration APIs for clients & e-commerce
 
-## Development Phases
+## Development Roadmap
 
-### Phase 1 — MVP (current scope)
+### Phase 1 — MVP
 - Users, roles, permissions
 - Customers, contracts, pricing
 - Branches, warehouses
@@ -103,6 +133,17 @@ D:\RMSA
 - BI dashboards, customer mobile app
 - Pickup/delivery points, smart lockers
 - International shipping
+
+### Not Yet Started (current phase)
+- Shipment management module
+- Customer management module
+- Fleet management module
+- Trip management module
+- User authentication / login
+- Database integration
+- API endpoints
+- E-commerce integrations
+- Government integrations (TGA, ZATCA)
 
 ## Key Integrations
 - TGA (Transport General Authority) / Logisti
