@@ -7,6 +7,8 @@ Cloud-based ERP system for **Ramsa Shipping & Logistics** company operating in S
 - **Framework:** Next.js (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS v4
+- **Database:** PostgreSQL + Prisma ORM v6
+- **Auth:** Auth.js v5 (next-auth@beta) + Prisma Adapter
 - **Node.js:** 22+
 - **Linting:** ESLint
 
@@ -16,136 +18,174 @@ Cloud-based ERP system for **Ramsa Shipping & Logistics** company operating in S
 | Primary | `#4B118F` (Purple) |
 | Primary Dark | `#2D075F` |
 | Accent | `#FF7900` (Orange) |
-| Accent Light | `#FF9E2C` |
 | Background | `#F7F7FA` |
 | Text | `#17131F` |
 | Text Secondary | `#6B6873` |
 | Success | `#16A56A` |
 | Error | `#D93B45` |
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                     Next.js 16                       │
+│  ┌──────────────┐  ┌────────────────────────────┐   │
+│  │   Proxy.ts   │  │        App Router           │   │
+│  │  (Auth Guard)│  │  / → Homepage               │   │
+│  │              │  │  /dashboard → Admin Panel   │   │
+│  │   Matcher:   │  │  /api/auth/[...nextauth]    │   │
+│  │   /dashboard │  │       Auth.js API           │   │
+│  └──────────────┘  └────────────────────────────┘   │
+│                         │                            │
+│                    ┌────┴────┐                       │
+│                    │  Auth.js│                       │
+│                    │  (JWT)  │                       │
+│                    └────┬────┘                       │
+│                         │                            │
+│                    ┌────┴────┐                       │
+│                    │ Prisma  │                       │
+│                    │  ORM    │                       │
+│                    └────┬────┘                       │
+│                         │                            │
+│                    ┌────┴────┐                       │
+│                    │PostgreSQL│                      │
+│                    └─────────┘                       │
+└─────────────────────────────────────────────────────┘
+```
+
 ## Project Structure
 
 ```
 D:\RMSA
+├── prisma/
+│   └── schema.prisma          # Database schema (8 models)
 ├── public/
-│   ├── logo.svg              # Company logo
-│   └── ...                   # Other static assets
+│   └── logo.svg
 ├── src/
 │   ├── app/
-│   │   ├── globals.css       # Global styles + brand design tokens
-│   │   ├── layout.tsx        # Root layout (fonts, metadata, RTL)
-│   │   ├── page.tsx          # Homepage
-│   │   └── dashboard/
-│   │       ├── layout.tsx    # Dashboard layout (DashboardShell wrapper)
-│   │       └── page.tsx      # Dashboard home with mock KPIs
+│   │   ├── api/auth/[...nextauth]/
+│   │   │   └── route.ts       # Auth.js API route handler
+│   │   ├── dashboard/
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   └── page.tsx
 │   ├── components/
-│   │   ├── ui/               # Primitives
-│   │   │   ├── badge.tsx
-│   │   │   ├── button.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── input.tsx
-│   │   │   └── page-header.tsx
-│   │   └── dashboard/        # Dashboard layout components
-│   │       ├── dashboard-shell.tsx
-│   │       ├── sidebar.tsx
-│   │       ├── topbar.tsx
-│   │       ├── stat-card.tsx
-│   │       ├── empty-state.tsx
-│   │       └── data-table-shell.tsx
-│   └── data/
-│       └── dashboard.ts      # Mock data for dashboard
+│   │   ├── dashboard/
+│   │   │   ├── dashboard-shell.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── topbar.tsx
+│   │   │   ├── stat-card.tsx
+│   │   │   ├── empty-state.tsx
+│   │   │   └── data-table-shell.tsx
+│   │   └── ui/
+│   │       ├── badge.tsx
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── input.tsx
+│   │       └── page-header.tsx
+│   ├── data/
+│   │   └── dashboard.ts
+│   ├── lib/
+│   │   ├── auth.ts            # Auth.js configuration
+│   │   └── prisma.ts          # Prisma client singleton
+│   ├── types/
+│   │   └── next-auth.d.ts     # Auth.js type extensions
+│   ├── proxy.ts               # Auth guard (inactive until login)
+│   └── middleware.ts (removed)# Renamed to proxy.ts
+├── .env                       # Local env (gitignored)
+├── .env.example               # Environment variables template
 ├── .gitignore
 ├── eslint.config.mjs
-├── logo.svg                  # Source logo file
+├── logo.svg
 ├── next.config.ts
 ├── package.json
 ├── postcss.config.mjs
-├── PRD-رمسا-ERP.md           # Product Requirements Document (Arabic)
-├── PROJECT_MAP.md            # This file
-├── tsconfig.json
-└── ...
+├── PRD-رمسا-ERP.md
+├── PROJECT_MAP.md
+└── tsconfig.json
+```
+
+## Database Schema (8 models)
+
+| Model | Table | Purpose |
+|---|---|---|
+| `User` | `users` | System users (employees, admins) |
+| `Role` | `roles` | RBAC roles (OWNER, MANAGER, etc.) |
+| `Permission` | `permissions` | Action+resource permissions |
+| `UserRole` | `user_roles` | Many-to-many User ↔ Role |
+| `RolePermission` | `role_permissions` | Many-to-many Role ↔ Permission |
+| `Session` | `sessions` | Database sessions (if not JWT) |
+| `Account` | `accounts` | OAuth provider accounts |
+| `VerificationToken` | `verification_tokens` | Email verification tokens |
+
+**User fields:** id, name, email (unique), emailVerified, phone (unique), passwordHash, image, status (ACTIVE/INACTIVE/SUSPENDED/BLOCKED), locale (AR/EN), createdAt, updatedAt
+
+**Roles:** OWNER, GENERAL_MANAGER, OPERATIONS_MANAGER, BRANCH_MANAGER, WAREHOUSE_SUPERVISOR, ACCOUNTANT, CUSTOMER_SERVICE, COURIER, DRIVER, SYSTEM_ADMIN
+
+## Environment Variables (.env.example)
+
+```
+DATABASE_URL  → PostgreSQL connection string
+AUTH_SECRET   → NextAuth secret (generate via `openssl rand -base64 32`)
+AUTH_URL      → Application base URL
 ```
 
 ## Completed
 
 ### Phase 0 — Brand Identity & UI Foundation
-- [x] Design tokens defined in Tailwind v4 `@theme`
-- [x] Inter (Latin) + Noto Sans Arabic fonts via `next/font/google`
-- [x] RTL-first layout (`dir="rtl"`, `lang="ar"`)
-- [x] Logo served from `public/logo.svg`
-- [x] SVG favicon pointing to logo
+- [x] Design tokens, fonts, RTL, logo, favicon
 - [x] UI primitives: Button, Input, Card, Badge, PageHeader
-- [x] Brand homepage with Arabic/English copy
+- [x] Brand homepage
 
 ### Phase 0.5 — Dashboard Shell & Layout
-- [x] `/dashboard` route with App Router
-- [x] DashboardShell: responsive layout with sidebar + topbar + content
-- [x] Sidebar: 14 navigation items with inline SVG icons, active state, "قريباً" labels
-- [x] Topbar: mobile menu toggle, search, notifications, user avatar
-- [x] StatCard: icon + label + value + optional trend
-- [x] DataTableShell: reusable table wrapper with headers
-- [x] EmptyState: placeholder component for empty views
-- [x] Mock data file (`src/data/dashboard.ts`)
-- [x] Dashboard KPI grid: 6 stat cards
-- [x] Recent shipments table (5 rows)
-- [x] Active trips table (3 rows)
-- [x] License/document alerts widget
-- [x] Responsive: desktop / tablet / mobile
-- [x] RTL-first with future LTR support via `rtl:`/`ltr:` modifiers
+- [x] `/dashboard` route with sidebar, topbar, KPI cards
+- [x] Responsive layout, RTL-first
+
+### Phase 0.6 — Database & Auth Foundation
+- [x] Prisma v6 ORM installed and configured
+- [x] PostgreSQL schema with 8 models (User, Role, Permission, etc.)
+- [x] RBAC design: roles, permissions, many-to-many relations
+- [x] Prisma client singleton (`src/lib/prisma.ts`)
+- [x] Auth.js v5 configuration with Prisma adapter
+- [x] Credentials provider with bcrypt password hashing
+- [x] JWT session strategy
+- [x] `/api/auth/[...nextauth]` route handler
+- [x] Auth guard proxy (ready but inactive until login page exists)
+- [x] `next-auth` TypeScript type extensions
+- [x] `.env.example` with documented variables
+- [x] Prisma scripts in package.json:
+  - `prisma:generate` — Generate Prisma Client
+  - `prisma:validate` — Validate schema
+  - `prisma:migrate:dev` — Create migration
+  - `prisma:studio` — Open Prisma Studio
+  - `postinstall` — Auto-generate on install
+- [x] Prisma validate ✅
+- [x] Prisma generate ✅
+- [x] ESLint ✅
+- [x] Build ✅
 
 ## Platforms (future phases)
-1. **ERP Admin Panel** — Web dashboard
+1. **ERP Admin Panel** — Web dashboard (in progress)
 2. **Client Portal** — Web portal for B2B/B2C clients
 3. **Agent App** — Mobile app for pickup/delivery agents
 4. **Driver App** — Mobile app for inter-city drivers
 5. **API** — Integration APIs for clients & e-commerce
 
-## Development Roadmap
-
-### Phase 1 — MVP
-- Users, roles, permissions
-- Customers, contracts, pricing
-- Branches, warehouses
-- Shipment creation, labels, barcodes
-- Pickup requests, sorting, loading/unloading
-- Trips, vehicles, drivers
-- Agent app, basic driver app
-- Tracking, POD, COD
-- Basic invoicing, expenses
-- Basic reports, notifications
-- Audit log
-- TGA integration layer
-- E-invoicing readiness
-
-### Phase 2
-- Full accounting, maintenance, fuel
-- Advanced COD settlement
-- Client portal, customer API, webhooks
-- Bulk upload, e-commerce integrations
-- Route optimization, tracking devices
-- Profitability reports, customer service tickets
-- Lost/damaged management
-
-### Phase 3
-- AI route optimization, delay prediction
-- Volume forecasting, auto vehicle assignment
-- Fraud detection, OCR document reading
-- BI dashboards, customer mobile app
-- Pickup/delivery points, smart lockers
-- International shipping
-
-### Not Yet Started (current phase)
+### Not Yet Started (next phases)
 - Shipment management module
-- Customer management module
-- Fleet management module
-- Trip management module
-- User authentication / login
-- Database integration
-- API endpoints
+- Customer / contract / pricing management
+- Branches / warehouses management
+- Trip / fleet management
+- Login page and real authentication flow
 - E-commerce integrations
 - Government integrations (TGA, ZATCA)
+- Agent / driver mobile apps
+- Reporting module
+- Real database migration (requires DATABASE_URL)
 
-## Key Integrations
+## Key Integrations (planned)
 - TGA (Transport General Authority) / Logisti
 - ZATCA e-invoicing
 - National Address (Saudi)
@@ -153,5 +193,4 @@ D:\RMSA
 - SMS, WhatsApp Business API
 - Payment gateway
 - Vehicle tracking devices
-- Barcode scanners, label printers
 - E-commerce platforms: Salla, Zid, Shopify, WooCommerce
