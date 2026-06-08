@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { seedAdmin, SeedError } from "@/lib/seed-admin.server";
 
 const prisma = new PrismaClient();
 
@@ -9,40 +9,23 @@ async function main() {
   const password = process.env.SEED_ADMIN_PASSWORD;
 
   if (!name || !email || !password) {
-    console.error("SEED_ADMIN_NAME, SEED_ADMIN_EMAIL, and SEED_ADMIN_PASSWORD must be set");
+    console.error(
+      "SEED_ADMIN_NAME, SEED_ADMIN_EMAIL, and SEED_ADMIN_PASSWORD must be set",
+    );
     process.exit(1);
   }
 
-  const role = await prisma.role.upsert({
-    where: { name: "SYSTEM_ADMIN" },
-    update: { description: "مدير النظام — كامل الصلاحيات" },
-    create: {
-      name: "SYSTEM_ADMIN",
-      description: "مدير النظام — كامل الصلاحيات",
-      isSystem: true,
-    },
-  });
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { name, passwordHash, status: "ACTIVE" },
-    create: { name, email, passwordHash, status: "ACTIVE", locale: "AR" },
-  });
-
-  await prisma.userRole.upsert({
-    where: { userId_roleId: { userId: user.id, roleId: role.id } },
-    update: {},
-    create: { userId: user.id, roleId: role.id },
-  });
-
-  console.log(`Seed complete: ${user.email} → ${role.name}`);
+  const result = await seedAdmin(prisma, { name, email, password });
+  console.log(`Seed complete: ${result.user.email} → ${result.role.name}`);
 }
 
 main()
   .catch((e) => {
-    console.error("Seed failed:", e);
+    if (e instanceof SeedError) {
+      console.error(`Seed failed at '${e.stage}': ${e.message}`);
+    } else {
+      console.error("Seed failed:", e);
+    }
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
