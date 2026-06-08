@@ -26,7 +26,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
-          include: { roles: { include: { role: true } } },
         });
 
         if (!user || !user.passwordHash) {
@@ -34,7 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         if (user.status !== "ACTIVE") {
-          return null;
+          throw new Error("الحساب غير نشط");
         }
 
         const isValid = await bcrypt.compare(
@@ -59,12 +58,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          include: { roles: { include: { role: true } } },
+        });
+        token.roles = dbUser?.roles.map((ur) => ur.role.name) ?? [];
       }
       return token;
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
+        session.user.roles = token.roles as string[];
       }
       return session;
     },

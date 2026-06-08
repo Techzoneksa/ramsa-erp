@@ -69,8 +69,12 @@ D:\RMSA
 │   ├── app/
 │   │   ├── api/auth/[...nextauth]/
 │   │   │   └── route.ts       # Auth.js API route handler
+│   │   ├── login/
+│   │   │   └── page.tsx           # تسجيل الدخول
+│   │   ├── unauthorized/
+│   │   │   └── page.tsx           # غير مصرح بالوصول
 │   │   ├── dashboard/
-│   │   │   ├── layout.tsx
+│   │   │   ├── layout.tsx         # يتحقق من الجلسة ويعرض Shell
 │   │   │   └── page.tsx
 │   │   ├── globals.css
 │   │   ├── layout.tsx
@@ -92,12 +96,19 @@ D:\RMSA
 │   ├── data/
 │   │   └── dashboard.ts
 │   ├── lib/
-│   │   ├── auth.ts            # Auth.js configuration
+│   │   ├── auth.ts            # Auth.js config + JWT callbacks (adds roles)
 │   │   └── prisma.ts          # Prisma client singleton
 │   ├── types/
-│   │   └── next-auth.d.ts     # Auth.js type extensions
-│   ├── proxy.ts               # Auth guard (inactive until login)
+│   │   └── next-auth.d.ts     # Auth.js type extensions (id, roles)
+│   ├── proxy.ts               # Auth guard — يحمي /dashboard و /unauthorized
 │   └── middleware.ts (removed)# Renamed to proxy.ts
+├── prisma/
+│   ├── schema.prisma          # Database schema (8 models)
+│   ├── seed.ts                # بذر أول مستخدم SYSTEM_ADMIN
+│   └── migrations/
+│       ├── migration_lock.toml
+│       └── 20260608114801_init_auth_and_rbac/
+│           └── migration.sql
 ├── scripts/
 │   └── check-env.mjs          # Pre-flight env var validation
 ├── .env                       # Local env (gitignored)
@@ -141,6 +152,9 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 | `DIRECT_URL` | Direct connection (port 5432) — Prisma migrations |
 | `AUTH_SECRET` | Auth.js encryption secret (base64, 32 bytes) |
 | `AUTH_URL` | Application base URL |
+| `SEED_ADMIN_NAME` | اسم مسؤول النظام الأول (لـ prisma/seed.ts) |
+| `SEED_ADMIN_EMAIL` | بريد مسؤول النظام الأول |
+| `SEED_ADMIN_PASSWORD` | كلمة مرور مسؤول النظام الأول |
 | `SUPABASE_URL` | Supabase project URL (optional) |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key (optional) |
 
@@ -164,17 +178,29 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 - [x] Credentials provider with bcrypt password hashing
 - [x] JWT session strategy
 - [x] `/api/auth/[...nextauth]` route handler
-- [x] Auth guard proxy (ready but inactive until login page exists)
-- [x] `next-auth` TypeScript type extensions
-- [x] `.env.example` with documented variables (6 vars)
+- [x] `next-auth` TypeScript type extensions (id, roles in Session & JWT)
+- [x] `.env.example` with documented variables (9 vars)
 - [x] `directUrl = env("DIRECT_URL")` in schema.prisma (line 8)
 - [x] Pre-flight env guard (`scripts/check-env.mjs`) fails fast if `DATABASE_URL` or `DIRECT_URL` is missing
 - [x] Offline migration SQL generated via `prisma migrate diff --from-empty`
 - [x] Migration saved to `prisma/migrations/<timestamp>_init_auth_and_rbac/`
 - [x] `migration_lock.toml` created (postgresql provider)
-- [x] Prisma scripts in package.json:
-  - `build` — Full Hostinger pipeline: `node scripts/check-env.mjs && prisma migrate deploy && prisma generate && next build`
-  - `deploy` — Separate deploy pipeline (also guarded): `node scripts/check-env.mjs && prisma migrate deploy && prisma generate && next build`
+
+### Phase 0.7 — Real Authentication (تسجيل الدخول)
+- [x] `/login` page — RTL, RMSA branding, بريد + كلمة مرور + إظهار/إخفاء + تحميل + أخطاء
+- [x] `/unauthorized` page — رسالة "غير مصرح بالوصول"
+- [x] `src/proxy.ts` — Auth guard نشط: يحمي `/dashboard` و `/unauthorized`، يعيد التوجيه إلى `/login`
+- [x] المستخدم المسجل يفتح `/login` → يُحوّل إلى `/dashboard`
+- [x] الزائر غير المسجل يفتح `/dashboard` → يُحوّل إلى `/login`
+- [x] `src/app/dashboard/layout.tsx` — التحقق من الجلسة قبل عرض المحتوى
+- [x] `src/components/dashboard/topbar.tsx` — يعرض اسم المستخدم + دوره + زر تسجيل خروج حقيقي
+- [x] `src/lib/auth.ts` — JWT callback يحفظ role codes في الـ token
+- [x] `prisma/seed.ts` — بذر أول مستخدم SYSTEM_ADMIN عبر متغيرات البيئة (SEED_ADMIN_NAME, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD)
+- [x] `tsx` — مثبّت كـ devDependency لتشغيل seed
+- [x] Prisma scripts في package.json:
+  - `build` — Hostinger pipeline: `prisma migrate deploy && prisma generate && next build`
+  - `deploy` — Deployment pipeline (مع pre-flight guard): `node scripts/check-env.mjs && prisma migrate deploy && prisma generate && next build`
+  - `prisma:seed` — `tsx prisma/seed.ts` (يدويًا، ليس تلقائيًا)
   - `prisma:generate` — Generate Prisma Client
   - `prisma:validate` — Validate schema
   - `prisma:migrate:dev` — Create migration (dev)
@@ -198,7 +224,6 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 - Customer / contract / pricing management
 - Branches / warehouses management
 - Trip / fleet management
-- Login page and real authentication flow
 - E-commerce integrations
 - Government integrations (TGA, ZATCA)
 - Agent / driver mobile apps
