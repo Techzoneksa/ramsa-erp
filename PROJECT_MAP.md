@@ -58,7 +58,11 @@ Cloud-based ERP system for **Ramsa Shipping & Logistics** company operating in S
 ```
 D:\RMSA
 ├── prisma/
-│   └── schema.prisma          # Database schema (8 models)
+│   ├── schema.prisma          # Database schema (8 models)
+│   └── migrations/
+│       ├── migration_lock.toml
+│       └── 20260608114801_init_auth_and_rbac/
+│           └── migration.sql  # Initial migration (offline-generated)
 ├── public/
 │   └── logo.svg
 ├── src/
@@ -127,9 +131,12 @@ D:\RMSA
 ## Environment Variables (.env.example)
 
 ```
-DATABASE_URL  → PostgreSQL connection string
-AUTH_SECRET   → NextAuth secret (generate via `openssl rand -base64 32`)
-AUTH_URL      → Application base URL
+DATABASE_URL    → PostgreSQL connection string (production: Hostinger)
+DIRECT_URL      → Direct PostgreSQL connection (for migrations, Supabase)
+AUTH_SECRET     → NextAuth secret (generate via `openssl rand -base64 32`)
+AUTH_URL        → Application base URL
+SUPABASE_URL    → Supabase project URL (for dev database)
+SUPABASE_ANON_KEY → Supabase anonymous key
 ```
 
 ## Completed
@@ -154,13 +161,19 @@ AUTH_URL      → Application base URL
 - [x] `/api/auth/[...nextauth]` route handler
 - [x] Auth guard proxy (ready but inactive until login page exists)
 - [x] `next-auth` TypeScript type extensions
-- [x] `.env.example` with documented variables
+- [x] `.env.example` with documented variables (6 vars)
+- [x] `directUrl = env("DIRECT_URL")` in schema.prisma
+- [x] Offline migration SQL generated via `prisma migrate diff --from-empty`
+- [x] Migration saved to `prisma/migrations/<timestamp>_init_auth_and_rbac/`
+- [x] `migration_lock.toml` created (postgresql provider)
 - [x] Prisma scripts in package.json:
   - `prisma:generate` — Generate Prisma Client
   - `prisma:validate` — Validate schema
-  - `prisma:migrate:dev` — Create migration
+  - `prisma:migrate:dev` — Create migration (dev)
+  - `prisma:migrate:deploy` — Apply migrations (production)
   - `prisma:studio` — Open Prisma Studio
   - `postinstall` — Auto-generate on install
+  - `deploy` — Full deployment pipeline: `prisma migrate deploy && prisma generate && next build`
 - [x] Prisma validate ✅
 - [x] Prisma generate ✅
 - [x] ESLint ✅
@@ -183,7 +196,7 @@ AUTH_URL      → Application base URL
 - Government integrations (TGA, ZATCA)
 - Agent / driver mobile apps
 - Reporting module
-- Real database migration (requires DATABASE_URL)
+- Real database migration applied on Hostinger (run `npm run deploy`)
 
 ## Key Integrations (planned)
 - TGA (Transport General Authority) / Logisti
