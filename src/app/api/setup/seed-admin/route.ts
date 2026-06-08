@@ -34,7 +34,15 @@ export async function POST(request: Request) {
     );
   }
 
+  const envCheck = {
+    name: !!name,
+    email: !!email,
+    password: !!password,
+  };
+  console.log("[seed] env vars present:", JSON.stringify(envCheck));
+
   try {
+    console.log("[seed] stage: role upsert");
     const role = await prisma.role.upsert({
       where: { name: "SYSTEM_ADMIN" },
       update: { description: "مدير النظام — كامل الصلاحيات" },
@@ -44,30 +52,39 @@ export async function POST(request: Request) {
         isSystem: true,
       },
     });
+    console.log("[seed] stage: role ok");
 
+    console.log("[seed] stage: password hash");
     const passwordHash = await bcrypt.hash(password, 12);
 
+    console.log("[seed] stage: user upsert");
     const user = await prisma.user.upsert({
       where: { email },
       update: { name, passwordHash, status: "ACTIVE" },
       create: { name, email, passwordHash, status: "ACTIVE", locale: "AR" },
       select: { id: true, email: true, name: true },
     });
+    console.log("[seed] stage: user ok");
 
+    console.log("[seed] stage: userRole upsert");
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: user.id, roleId: role.id } },
       update: {},
       create: { userId: user.id, roleId: role.id },
     });
+    console.log("[seed] stage: userRole ok");
 
     return NextResponse.json({
       success: true,
       user: { id: user.id, email: user.email },
       role: role.name,
     });
-  } catch {
+  } catch (err: unknown) {
+    const prismaErr = err as { code?: string; meta?: object; message?: string };
+    const code = prismaErr.code ?? "UNKNOWN";
+    console.log(`[seed] failed at stage — error code: ${code}`);
     return NextResponse.json(
-      { error: "Seed failed" },
+      { error: "Seed failed", stage: "see server logs", code },
       { status: 500 },
     );
   }
