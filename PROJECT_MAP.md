@@ -167,13 +167,13 @@ SUPABASE_ANON_KEY → Supabase anonymous key
 - [x] Migration saved to `prisma/migrations/<timestamp>_init_auth_and_rbac/`
 - [x] `migration_lock.toml` created (postgresql provider)
 - [x] Prisma scripts in package.json:
+  - `build` — Full Hostinger pipeline: `prisma migrate deploy && prisma generate && next build`
   - `prisma:generate` — Generate Prisma Client
   - `prisma:validate` — Validate schema
   - `prisma:migrate:dev` — Create migration (dev)
   - `prisma:migrate:deploy` — Apply migrations (production)
   - `prisma:studio` — Open Prisma Studio
   - `postinstall` — Auto-generate on install
-  - `deploy` — Full deployment pipeline: `prisma migrate deploy && prisma generate && next build`
 - [x] Prisma validate ✅
 - [x] Prisma generate ✅
 - [x] ESLint ✅
@@ -196,7 +196,7 @@ SUPABASE_ANON_KEY → Supabase anonymous key
 - Government integrations (TGA, ZATCA)
 - Agent / driver mobile apps
 - Reporting module
-- Real database migration applied on Hostinger (run `npm run deploy`)
+- Real database migration applied on Hostinger via `npm run build` (runs `prisma migrate deploy` automatically)
 
 ## Key Integrations (planned)
 - TGA (Transport General Authority) / Logisti
