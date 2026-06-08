@@ -201,12 +201,21 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
   - `build` — Hostinger pipeline: `prisma migrate deploy && prisma generate && next build`
   - `deploy` — Deployment pipeline (مع pre-flight guard): `node scripts/check-env.mjs && prisma migrate deploy && prisma generate && next build`
   - `prisma:seed` — `tsx prisma/seed.ts` (يدويًا، ليس تلقائيًا)
+  - `seed:admin` — `tsx prisma/seed.ts` (مرادف لـ prisma:seed)
   - `prisma:generate` — Generate Prisma Client
   - `prisma:validate` — Validate schema
   - `prisma:migrate:dev` — Create migration (dev)
   - `prisma:migrate:deploy` — Apply migrations (production)
   - `prisma:studio` — Open Prisma Studio
   - `postinstall` — Auto-generate on install
+- [x] `POST /api/setup/seed-admin` — API Route مؤقتة لإنشاء أول SYSTEM_ADMIN
+  - محمية بـ `x-setup-secret` header + `SETUP_SECRET` env
+  - ترجع 401 إذا لم يطابق secret
+  - ترجع 500 إذا لم تُضبط `SETUP_SECRET` أو متغيرات SEED_ADMIN_*
+  - تستخدم upsert — آمنة للاستدعاء المتكرر
+  - لا تطبع أو ترجع passwordHash
+  - **مؤقتة — يجب حذفها بعد إنشاء أول مستخدم**
+- [x] `.env.example` — إضافة `SETUP_SECRET`
 - [x] Prisma validate ✅
 - [x] Prisma generate ✅
 - [x] ESLint ✅
