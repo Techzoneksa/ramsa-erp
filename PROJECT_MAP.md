@@ -98,8 +98,11 @@ D:\RMSA
 │   │   └── next-auth.d.ts     # Auth.js type extensions
 │   ├── proxy.ts               # Auth guard (inactive until login)
 │   └── middleware.ts (removed)# Renamed to proxy.ts
+├── scripts/
+│   └── check-env.mjs          # Pre-flight env var validation
 ├── .env                       # Local env (gitignored)
-├── .env.example               # Environment variables template
+├── .env.example               # Environment variables template (with placeholders & docs)
+├── README.md                  # Project overview & env var docs
 ├── .gitignore
 ├── eslint.config.mjs
 ├── logo.svg
@@ -128,16 +131,18 @@ D:\RMSA
 
 **Roles:** OWNER, GENERAL_MANAGER, OPERATIONS_MANAGER, BRANCH_MANAGER, WAREHOUSE_SUPERVISOR, ACCOUNTANT, CUSTOMER_SERVICE, COURIER, DRIVER, SYSTEM_ADMIN
 
-## Environment Variables (.env.example)
+## Environment Variables
 
-```
-DATABASE_URL    → PostgreSQL connection string (production: Hostinger)
-DIRECT_URL      → Direct PostgreSQL connection (for migrations, Supabase)
-AUTH_SECRET     → NextAuth secret (generate via `openssl rand -base64 32`)
-AUTH_URL        → Application base URL
-SUPABASE_URL    → Supabase project URL (for dev database)
-SUPABASE_ANON_KEY → Supabase anonymous key
-```
+See [.env.example](./.env.example) for placeholders and [README.md](./README.md#environment-variables) for the full reference.
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Pooled connection (pgBouncer, port 6543) — Prisma runtime |
+| `DIRECT_URL` | Direct connection (port 5432) — Prisma migrations |
+| `AUTH_SECRET` | Auth.js encryption secret (base64, 32 bytes) |
+| `AUTH_URL` | Application base URL |
+| `SUPABASE_URL` | Supabase project URL (optional) |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key (optional) |
 
 ## Completed
 
@@ -162,12 +167,14 @@ SUPABASE_ANON_KEY → Supabase anonymous key
 - [x] Auth guard proxy (ready but inactive until login page exists)
 - [x] `next-auth` TypeScript type extensions
 - [x] `.env.example` with documented variables (6 vars)
-- [x] `directUrl = env("DIRECT_URL")` in schema.prisma
+- [x] `directUrl = env("DIRECT_URL")` in schema.prisma (line 8)
+- [x] Pre-flight env guard (`scripts/check-env.mjs`) fails fast if `DATABASE_URL` or `DIRECT_URL` is missing
 - [x] Offline migration SQL generated via `prisma migrate diff --from-empty`
 - [x] Migration saved to `prisma/migrations/<timestamp>_init_auth_and_rbac/`
 - [x] `migration_lock.toml` created (postgresql provider)
 - [x] Prisma scripts in package.json:
-  - `build` — Full Hostinger pipeline: `prisma migrate deploy && prisma generate && next build`
+  - `build` — Full Hostinger pipeline: `node scripts/check-env.mjs && prisma migrate deploy && prisma generate && next build`
+  - `deploy` — Separate deploy pipeline (also guarded): `node scripts/check-env.mjs && prisma migrate deploy && prisma generate && next build`
   - `prisma:generate` — Generate Prisma Client
   - `prisma:validate` — Validate schema
   - `prisma:migrate:dev` — Create migration (dev)
