@@ -97,11 +97,11 @@ D:\RMSA
 │   │   └── dashboard.ts
 │   ├── lib/
 │   │   ├── auth.ts            # Auth.js config + JWT callbacks (adds roles)
-│   │   └── prisma.ts          # Prisma client singleton
+│   │   ├── prisma.ts          # Prisma client singleton
+│   │   └── seed-admin.server.ts  # Shared seedAdmin function (server-only)
 │   ├── types/
 │   │   └── next-auth.d.ts     # Auth.js type extensions (id, roles)
-│   ├── proxy.ts               # Auth guard — يحمي /dashboard و /unauthorized
-│   └── middleware.ts (removed)# Renamed to proxy.ts
+│   └── proxy.ts               # Auth guard — يحمي /dashboard و /unauthorized
 ├── prisma/
 │   ├── schema.prisma          # Database schema (8 models)
 │   ├── seed.ts                # بذر أول مستخدم SYSTEM_ADMIN
@@ -192,9 +192,12 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 - [x] `src/proxy.ts` — Auth guard نشط: يحمي `/dashboard` و `/unauthorized`، يعيد التوجيه إلى `/login`
 - [x] المستخدم المسجل يفتح `/login` → يُحوّل إلى `/dashboard`
 - [x] الزائر غير المسجل يفتح `/dashboard` → يُحوّل إلى `/login`
-- [x] `src/app/dashboard/layout.tsx` — التحقق من الجلسة قبل عرض المحتوى
+- [x] `src/app/dashboard/layout.tsx` — التحقق من الجلسة قبل عرض المحتوى + `dynamic = "force-dynamic"`
+- [x] Fix: منع خطأ `Static generation failed due to dynamic usage on /dashboard` بإضافة `export const dynamic = "force-dynamic"`
 - [x] `src/components/dashboard/topbar.tsx` — يعرض اسم المستخدم + دوره + زر تسجيل خروج حقيقي
 - [x] `src/lib/auth.ts` — JWT callback يحفظ role codes في الـ token
+- [x] `src/lib/seed-admin.server.ts` — دالة مشتركة `seedAdmin()` + كلاس `SeedError` مع stage/code/errorName/target
+- [x] `prisma/seed.ts` و `POST /api/setup/seed-admin` — يستخدمان `seedAdmin()` من المصدر المشترك
 - [x] `prisma/seed.ts` — بذر أول مستخدم SYSTEM_ADMIN عبر متغيرات البيئة (SEED_ADMIN_NAME, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD)
 - [x] `tsx` — مثبّت كـ devDependency لتشغيل seed
 - [x] Prisma scripts في package.json:
@@ -214,6 +217,8 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
   - ترجع 500 إذا لم تُضبط `SETUP_SECRET` أو متغيرات SEED_ADMIN_*
   - تستخدم upsert — آمنة للاستدعاء المتكرر
   - لا تطبع أو ترجع passwordHash
+  - تستخدم `seedAdmin()` من `src/lib/seed-admin.server.ts`
+  - خطأ JSON يحوي: stage, errorName, code, target
   - **مؤقتة — يجب حذفها بعد إنشاء أول مستخدم**
 - [x] `.env.example` — إضافة `SETUP_SECRET`
 - [x] Prisma validate ✅
