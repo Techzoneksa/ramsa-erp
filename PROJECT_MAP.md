@@ -194,6 +194,8 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 - [x] الزائر غير المسجل يفتح `/dashboard` → يُحوّل إلى `/login`
 - [x] `src/app/dashboard/layout.tsx` — التحقق من الجلسة قبل عرض المحتوى + `dynamic = "force-dynamic"`
 - [x] Fix: منع خطأ `Static generation failed due to dynamic usage on /dashboard` بإضافة `export const dynamic = "force-dynamic"`
+- [x] Build diagnostic (commit dea041a): prisma validate ✅, prisma generate ✅, tsc --noEmit ✅, eslint ✅, next build ✅ Exit 0
+- [x] التحقق من عدم وجود ملف `6a280f3e8d89b.next.config.ts` — غير موجود في working tree ولا git history
 - [x] `src/components/dashboard/topbar.tsx` — يعرض اسم المستخدم + دوره + زر تسجيل خروج حقيقي
 - [x] `src/lib/auth.ts` — JWT callback يحفظ role codes في الـ token
 - [x] `src/lib/seed-admin.server.ts` — دالة مشتركة `seedAdmin()` + كلاس `SeedError` مع stage/code/errorName/target
