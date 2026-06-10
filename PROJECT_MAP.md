@@ -152,9 +152,6 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 | `DIRECT_URL` | Direct connection (port 5432) — Prisma migrations |
 | `AUTH_SECRET` | Auth.js encryption secret (base64, 32 bytes) |
 | `AUTH_URL` | Application base URL |
-| `SEED_ADMIN_NAME` | اسم مسؤول النظام الأول (لـ prisma/seed.ts) |
-| `SEED_ADMIN_EMAIL` | بريد مسؤول النظام الأول |
-| `SEED_ADMIN_PASSWORD` | كلمة مرور مسؤول النظام الأول |
 | `SUPABASE_URL` | Supabase project URL (optional) |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key (optional) |
 
@@ -199,8 +196,7 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 - [x] `src/components/dashboard/topbar.tsx` — يعرض اسم المستخدم + دوره + زر تسجيل خروج حقيقي
 - [x] `src/lib/auth.ts` — JWT callback يحفظ role codes في الـ token
 - [x] `src/lib/seed-admin.server.ts` — دالة مشتركة `seedAdmin()` + كلاس `SeedError` مع stage/code/errorName/target
-- [x] `prisma/seed.ts` و `POST /api/setup/seed-admin` — يستخدمان `seedAdmin()` من المصدر المشترك
-- [x] `prisma/seed.ts` — بذر أول مستخدم SYSTEM_ADMIN عبر متغيرات البيئة (SEED_ADMIN_NAME, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD)
+- [x] `prisma/seed.ts` — يستخدم `seedAdmin()` من المصدر المشترك (للتطوير المحلي فقط)
 - [x] `tsx` — مثبّت كـ devDependency لتشغيل seed
 - [x] Prisma scripts في package.json:
   - `build` — Hostinger pipeline: `prisma migrate deploy && prisma generate && next build`
@@ -213,20 +209,37 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
   - `prisma:migrate:deploy` — Apply migrations (production)
   - `prisma:studio` — Open Prisma Studio
   - `postinstall` — Auto-generate on install
-- [x] `POST /api/setup/seed-admin` — API Route مؤقتة لإنشاء أول SYSTEM_ADMIN
-  - محمية بـ `x-setup-secret` header + `SETUP_SECRET` env
-  - ترجع 401 إذا لم يطابق secret
-  - ترجع 500 إذا لم تُضبط `SETUP_SECRET` أو متغيرات SEED_ADMIN_*
-  - تستخدم upsert — آمنة للاستدعاء المتكرر
-  - لا تطبع أو ترجع passwordHash
-  - تستخدم `seedAdmin()` من `src/lib/seed-admin.server.ts`
-  - خطأ JSON يحوي: stage, errorName, code, target
-  - **مؤقتة — يجب حذفها بعد إنشاء أول مستخدم**
-- [x] `.env.example` — إضافة `SETUP_SECRET`
 - [x] Prisma validate ✅
 - [x] Prisma generate ✅
 - [x] ESLint ✅
 - [x] Build ✅
+
+### Phase 0.8 — Browser-based First Admin Setup
+- [x] `/setup` page — واجهة إنشاء أول مدير من المتصفح
+  - صفحة سيرفر: `src/app/setup/page.tsx` — تفحص `user.count()` وتُعيد التوجيه إلى `/login` إذا وُجد مستخدم
+  - نموذج عميل: `src/app/setup/setup-form.tsx` — الاسم، البريد، كلمة المرور، تأكيد كلمة المرور، إظهار/إخفاء
+  - Server Action: `src/app/setup/actions.ts` — تنشئ أول مستخدم SYSTEM_ADMIN
+  - `export const dynamic = "force-dynamic"` — تمنع static prerendering
+  - تصميم مطابق لهوية RMSA (نفس تخطيط /login)
+- [x] آلية منع إنشاء عدة مديرين:
+  - فحص `user.count()` داخل `$transaction` في Server Action
+  - يرمي `SETUP_ALREADY_COMPLETED` إذا وُجد مستخدم
+  - فحص عند تحميل الصفحة (server-side redirect)
+  - استباق: لا يمكن إنشاء مستخدم ثانٍ من هذا المسار
+- [x] إنشاء المستخدم الأول:
+  - `bcrypt.hash(password, 12)` — تشفير كلمة المرور
+  - `prisma.$transaction(async (tx) => { ... })` — عملية ذرية
+  - التحقق من صحة البريد (regex)، طول كلمة المرور (≥10)، تطابق التأكيد
+  - upsert لدور SYSTEM_ADMIN
+  - إنشاء User + UserRole في نفس العملية
+  - خطأ آمن: `SETUP_ALREADY_COMPLETED` (لا تعرض تفاصيل حساسة)
+  - تسجيل stage فقط في السيرفر (`console.log` بدون passwordHash)
+- [x] بعد النجاح: رسالة نجاح + تحويل تلقائي إلى `/login` بعد 2 ثانية
+- [x] حذف الأسلوب القديم:
+  - حُذف: `src/app/api/setup/seed-admin/route.ts` — API Route المؤقتة
+  - أُزيلت متغيرات البيئة: `SETUP_SECRET`, `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`
+  - `.env.example` — محدّث بدون المتغيرات المذكورة
+- [x] `src/lib/seed-admin.server.ts` + `prisma/seed.ts` — بقيا للتطوير المحلي (لا تعتمدان على SETUP_SECRET)
 
 ## Platforms (future phases)
 1. **ERP Admin Panel** — Web dashboard (in progress)
