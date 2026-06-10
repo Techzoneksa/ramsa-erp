@@ -123,6 +123,84 @@ model Account {
   @@map("accounts")
 }
 
+enum BranchType {
+  HEAD_OFFICE
+  BRANCH
+  HUB
+  DISTRIBUTION_CENTER
+
+  @@map("branch_type")
+}
+
+enum WarehouseType {
+  MAIN
+  TRANSIT
+  RETURN
+  DAMAGED
+  COLD_STORAGE
+  OTHER
+
+  @@map("warehouse_type")
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+
+  @@map("record_status")
+}
+
+model Branch {
+  id              String       @id @default(cuid())
+  code            String       @unique
+  nameAr          String
+  nameEn          String?
+  type            BranchType
+  status          RecordStatus @default(ACTIVE)
+  region          String?
+  city            String
+  district        String?
+  street          String?
+  postalCode      String?
+  shortAddress    String?
+  nationalAddress String?
+  phone           String?
+  email           String?
+  managerName     String?
+  managerPhone    String?
+  isHeadOffice    Boolean      @default(false)
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  warehouses Warehouse[]
+
+  @@map("branches")
+}
+
+model Warehouse {
+  id              String        @id @default(cuid())
+  branchId        String
+  code            String        @unique
+  nameAr          String
+  nameEn          String?
+  type            WarehouseType
+  status          RecordStatus  @default(ACTIVE)
+  capacity        Float?
+  capacityUnit    String?
+  phone           String?
+  supervisorName  String?
+  supervisorPhone String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@map("warehouses")
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique

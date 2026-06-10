@@ -241,6 +241,31 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
   - `.env.example` — محدّث بدون المتغيرات المذكورة
 - [x] `src/lib/seed-admin.server.ts` + `prisma/seed.ts` — بقيا للتطوير المحلي (لا تعتمدان على SETUP_SECRET)
 
+### Phase 1 — Branches & Warehouses Master Data
+- [x] Prisma models: `Branch` (branches), `Warehouse` (warehouses)
+  - Branch: code (unique), nameAr, nameEn, type (HEAD_OFFICE/BRANCH/HUB/DISTRIBUTION_CENTER), status (ACTIVE/INACTIVE/SUSPENDED), region, city, district, street, postalCode, shortAddress, nationalAddress, phone, email, managerName, managerPhone, isHeadOffice (unique constraint enforced), notes
+  - Warehouse: code (unique), nameAr, nameEn, type (MAIN/TRANSIT/RETURN/DAMAGED/COLD_STORAGE/OTHER), status, capacity, capacityUnit, phone, supervisorName, supervisorPhone, notes, belongs to Branch
+  - All deactivations via status change, no hard deletes
+  - Enums mapped via `@@map` to snake_case in PostgreSQL
+- [x] Migration: `20260610135522_add_branches_and_warehouses` (new, untouched previous migration)
+- [x] Permission system: `src/lib/permissions.ts`
+  - Role-based access matrix for `branch` and `warehouse` resources
+  - `SYSTEM_ADMIN` / `OWNER`: full CRUD
+  - `GENERAL_MANAGER`: create, read, update
+  - `OPERATIONS_MANAGER`: read only
+  - Helpers: `requirePermission(session, action, resource)` and `can(session, action, resource)`
+  - Extensible: add roles/resources/actions to the matrix
+- [x] Sidebar: "الفروع والمستودعات" link activated → `/dashboard/branches`
+- [x] `/dashboard/branches` — list page with search (name/code/city), filters (status/type/region), pagination (10/page), empty/loading/error states
+- [x] `/dashboard/branches/new` — create form with branch form component (basic info, address, contact, management, notes)
+- [x] `/dashboard/branches/[id]` — detail page with branch info cards + inline warehouse management (create/edit/toggle status)
+- [x] `/dashboard/branches/[id]/edit` — edit form pre-filled with existing data
+- [x] Server actions: `createBranch`, `updateBranch`, `createWarehouse`, `updateWarehouse`, `toggleWarehouseStatus`
+  - All server-side validation + Prisma error handling (no sensitive error exposure)
+  - `isHeadOffice` uniqueness enforced via `updateMany` before create/update
+- [x] All routes marked dynamic (`force-dynamic` inherited from dashboard layout)
+- [x] Build: `next build` ✅, `tsc --noEmit` ✅, `eslint` ✅, `prisma validate` ✅, `prisma generate` ✅
+
 ## Platforms (future phases)
 1. **ERP Admin Panel** — Web dashboard (in progress)
 2. **Client Portal** — Web portal for B2B/B2C clients
@@ -251,7 +276,6 @@ See [.env.example](./.env.example) for placeholders and [README.md](./README.md#
 ### Not Yet Started (next phases)
 - Shipment management module
 - Customer / contract / pricing management
-- Branches / warehouses management
 - Trip / fleet management
 - E-commerce integrations
 - Government integrations (TGA, ZATCA)

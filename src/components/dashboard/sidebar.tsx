@@ -15,7 +15,7 @@ const navItems: NavItem[] = [
   { label: "الشحنات", href: "#", icon: <ShipmentIcon /> },
   { label: "طلبات الاستلام", href: "#", icon: <PickupIcon /> },
   { label: "الرحلات", href: "#", icon: <TripIcon /> },
-  { label: "الفروع والمستودعات", href: "#", icon: <BranchIcon /> },
+  { label: "الفروع والمستودعات", href: "/dashboard/branches", icon: <BranchIcon /> },
   { label: "العملاء", href: "#", icon: <CustomerIcon /> },
   { label: "المركبات", href: "#", icon: <VehicleIcon /> },
   { label: "السائقون والمندوبون", href: "#", icon: <DriverIcon /> },
